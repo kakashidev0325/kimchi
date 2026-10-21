@@ -1,9 +1,11 @@
 const CONFIG = {
-  tokenAddress: "9rzRfWAFzjkV7HMm36M1ZSh7JUf4S8pw6UeZdPdLpump",
+  tokenAddress: "",
   pumpFunUrl: "",
-  twitter: "https://x.com/trumponsol_x",
+  twitter: "",
   telegram: "",
 };
+
+const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
 function getPumpFunUrl() {
   if (CONFIG.pumpFunUrl) return CONFIG.pumpFunUrl;
@@ -80,8 +82,99 @@ function initSocialLinks() {
   });
 }
 
+function initCapsules() {
+  const field = document.querySelector(".capsule-field");
+  if (!field || prefersReducedMotion) return;
+
+  const count = window.innerWidth < 720 ? 10 : 20;
+  const rand = (min, max) => Math.random() * (max - min) + min;
+
+  for (let i = 0; i < count; i++) {
+    const capsule = document.createElement("span");
+    capsule.className = "capsule";
+    capsule.style.left = `${rand(0, 100)}%`;
+    capsule.style.setProperty("--size", `${rand(10, 22)}px`);
+    capsule.style.setProperty("--dur", `${rand(12, 24)}s`);
+    capsule.style.setProperty("--delay", `${-rand(0, 24)}s`);
+    capsule.style.setProperty("--rot", `${rand(0, 360)}deg`);
+    capsule.style.setProperty("--spin", `${rand(-540, 540)}deg`);
+    capsule.style.setProperty("--drift", `${rand(-80, 80)}px`);
+    capsule.style.setProperty("--alpha", rand(0.35, 0.8).toFixed(2));
+    field.appendChild(capsule);
+  }
+}
+
+function countUp(el) {
+  const target = Number(el.dataset.count);
+  const suffix = el.dataset.suffix || "";
+  const duration = 1400;
+  const start = performance.now();
+
+  const tick = (now) => {
+    const t = Math.min((now - start) / duration, 1);
+    const eased = 1 - Math.pow(1 - t, 3);
+    el.textContent = `${Math.round(target * eased)}${suffix}`;
+    if (t < 1) requestAnimationFrame(tick);
+  };
+
+  requestAnimationFrame(tick);
+}
+
+function initReveal() {
+  const items = document.querySelectorAll(".reveal");
+
+  if (prefersReducedMotion || !("IntersectionObserver" in window)) {
+    items.forEach((el) => el.classList.add("in"));
+    return;
+  }
+
+  const observer = new IntersectionObserver(
+    (entries) => {
+      entries.forEach((entry) => {
+        if (!entry.isIntersecting) return;
+        entry.target.classList.add("in");
+        entry.target.querySelectorAll("[data-count]").forEach(countUp);
+        observer.unobserve(entry.target);
+      });
+    },
+    { threshold: 0.18, rootMargin: "0px 0px -40px 0px" }
+  );
+
+  items.forEach((el) => observer.observe(el));
+}
+
+function initScrollEffects() {
+  const header = document.querySelector(".site-header");
+  const progress = document.querySelector(".scroll-progress");
+  let ticking = false;
+
+  const update = () => {
+    const scrollTop = window.scrollY;
+    const max = document.documentElement.scrollHeight - window.innerHeight;
+    header.classList.toggle("scrolled", scrollTop > 40);
+    progress.style.setProperty("--progress", max > 0 ? (scrollTop / max).toFixed(4) : 0);
+    ticking = false;
+  };
+
+  window.addEventListener(
+    "scroll",
+    () => {
+      if (!ticking) {
+        requestAnimationFrame(update);
+        ticking = true;
+      }
+    },
+    { passive: true }
+  );
+
+  update();
+}
+
 document.addEventListener("DOMContentLoaded", () => {
   initContract();
   initNav();
   initSocialLinks();
+  initCapsules();
+  initReveal();
+  initScrollEffects();
 });
