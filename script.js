@@ -1,7 +1,7 @@
 const CONFIG = {
   tokenAddress: "",
   pumpFunUrl: "",
-  twitter: "",
+  twitter: "https://x.com/kimchisol_x",
   telegram: "",
 };
 
